@@ -7,6 +7,15 @@
 -->
 <resources>
 
+    <!-- Fork-only weather on Home. Network access is used only when enabled; see docs/fork-weather.md. -->
+    <bool name="weather">false</bool>
+    <!-- Name, latitude, longitude. Grouped to keep this multilingual APK small. -->
+    <string-array name="weather_place" translatable="false">
+        <item>Aix-en-Provence</item>
+        <item>43.5297</item>
+        <item>5.4474</item>
+    </string-array>
+
     <!-- Tried in order when no standard settings handler is usable; each package must also be visible
          through <queries> in the manifest. -->
     <string-array name="settings_fallback_components" translatable="false">

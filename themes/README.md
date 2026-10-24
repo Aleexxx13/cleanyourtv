@@ -71,6 +71,11 @@ A new key needs one there in the same pull request.
 | `library_apps` | list of package names | Packages pre-seeded into the App library's "added" set at startup (config.xml `library_apps`, or a theme's `config.json`). They show on Home as if the owner had added them in the App library UI, and stay removable there (a removed one stays hidden); empty (off) by default |
 | `shamsi_date` | bool | Show the Solar Hijri date above the Gregorian one |
 | `greeting_name` | string | A name after the greeting, e.g. `"Mr. Trịnh"` for GOOD MORNING, MR. TRỊNH; empty for the greeting alone |
+| `weather` | bool | Personal fork only: show current weather below the clock; `false` by default. Requires this fork's network permission; see [weather and rollback](../docs/fork-weather.md) |
+| `weather_city` | string | Weather city label, `Aix-en-Provence` by default; configured explicitly without a location lookup |
+| `weather_latitude` | number | City latitude, `43.5297` by default |
+| `weather_longitude` | number | City longitude, `5.4474` by default |
+| `weather_place` | string array | Source `config.xml` only: city name, latitude and longitude. A JSON theme uses the three separate keys above |
 | `module_cards` | bool | Look for module cards and ask about them (`true`); `false` turns the feature off |
 | `reduced_motion` | bool | Calmer motion for weak GPUs: the highlight slides without bouncing and settles within 5 frames, every animation lasts 90 ms or less, names, the top shelf, the glow and the highlight appear instead of fading, and there is no tile entrance (`false` by default) |
 | `boot_to_live_tv` | bool | Open the Live TV app (`live_tv_package`) on the first Home after the TV starts, once per boot |

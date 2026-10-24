@@ -170,6 +170,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean advancedEffects;
     private TextView greeting;
     private View clockBlock;
+    private WeatherController weather;
     private View btnInputs;
     /** config show_inputs_pill: false keeps the Inputs pill hidden even when the TV has inputs. */
     private boolean showInputsPill = true;
@@ -420,6 +421,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
+        weather = new WeatherController(this, cfg.weather, (android.widget.FrameLayout) root);
         greeting = findViewById(R.id.greeting);
         clockBlock = findViewById(R.id.leftBlock);
         greetingColor = greeting.getCurrentTextColor();
@@ -439,6 +441,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         stats = findViewById(R.id.stats);
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
+        if (cfg.weather.enabled) {
+            android.widget.FrameLayout.LayoutParams lp = (android.widget.FrameLayout.LayoutParams) racePanel.getLayoutParams();
+            lp.topMargin += Math.round(28 * getResources().getDisplayMetrics().density);
+            racePanel.setLayoutParams(lp);
+        }
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
         raceSessions = findViewById(R.id.raceSessions);
@@ -545,6 +552,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
             // No dock to push down: the grid starts at the top, with room for the first row's zoom and glass.
             if (!MainActivity.this.dockRow) want = (int) (AppAdapter.TOP_ROOM_DP * density);
+            want = Weather.gridTopPadding(cfg.weather.enabled, MainActivity.this.dockRow, want, density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
             }
@@ -823,6 +831,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             recreate();
             return;
         }
+        weather.start();
         restartIdleClock();
         promptsPaused = false;
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
@@ -1022,6 +1031,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        if (weather != null) weather.stop();
         root.removeCallbacks(showIdleClock);
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
@@ -1085,6 +1095,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (weather != null) weather.close();
         unregisterReceiver(packageReceiver);
         wallpaperPlayer.close();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
