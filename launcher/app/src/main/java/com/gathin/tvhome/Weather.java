@@ -25,8 +25,7 @@ final class Weather {
             this.longitude = longitude;
             this.enabled = enabled && !this.name.isEmpty() && this.name.length() <= 40
                     && !this.name.matches(".*[\\p{Cntrl}].*")
-                    && Double.isFinite(latitude) && Math.abs(latitude) <= 90
-                    && Double.isFinite(longitude) && Math.abs(longitude) <= 180;
+                    && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;
         }
 
         String key() { return name + ":" + latitude + ":" + longitude; }

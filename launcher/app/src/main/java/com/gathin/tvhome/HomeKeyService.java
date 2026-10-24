@@ -8,8 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.UserManager;
 import android.content.pm.PackageManager;
@@ -38,7 +40,7 @@ import java.util.Set;
  *   settings put secure enabled_accessibility_services com.gathin.tvhome/.HomeKeyService
  *   settings put secure accessibility_enabled 1
  */
-public class HomeKeyService extends AccessibilityService {
+public class HomeKeyService extends AccessibilityService implements Runnable {
 
     /** restore_key_services was on when the config was read: this helper is noted for ServiceRepair. */
     private boolean repairRecord;
@@ -94,12 +96,14 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     public void onDestroy() {
+        stopVolume();
         stopWaitingForUnlock();
         if (gamepads != null) gamepads.stop();
         super.onDestroy();
     }
 
     private void loadConfig() {
+        stopVolume();
         // Keycodes and the panel choice can also come from a theme; theme.sh restarts this service.
         Config config = Config.load(this);
         // restore_key_services: note that this helper runs, so Home can put it back after a force stop. Here, not
@@ -143,6 +147,21 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        int key = event.getKeyCode();
+        // This firmware already handles the first volume step before filtering. Consume its second pass.
+        // Opt in only on a TV where that behavior was measured; never intercept volume by default.
+        if (gamepads == null && (key == KeyEvent.KEYCODE_VOLUME_UP || key == KeyEvent.KEYCODE_VOLUME_DOWN)
+                && "tcl-volume".equals(appKeys.get(key))) {
+            if (event.getAction() != KeyEvent.ACTION_DOWN || event.isCanceled()) {
+                volume.release(key);
+                if (!volume.active) handler.removeCallbacks(this);
+            } else if (volume.press(key, event.getDownTime())) {
+                handler.removeCallbacks(this);
+                handler.postDelayed(this, volume.delay);
+            }
+            return true;
+        }
+        stopVolume();
         // A scancode entry is more specific than any keycode, so it goes first.
         if (RemoteKeys.handle(this, event, appScancodes.get(event.getScanCode()),
                 holdAppScancodes.get(event.getScanCode()))) return true;
@@ -179,6 +198,7 @@ public class HomeKeyService extends AccessibilityService {
     /** Unbound by Android: the user turned the helper off, so Home doesn't put it back (ServiceRepair). */
     @Override
     public boolean onUnbind(Intent intent) {
+        stopVolume();
         if (repairRecord) ServiceRepair.disconnected(this, getClass());
         return super.onUnbind(intent);
     }
@@ -217,6 +237,19 @@ public class HomeKeyService extends AccessibilityService {
     /** Lets the system see the key, so a long press still does what the firmware gives it. */
     private static final long HOME_KEY_DELAY_MS = 250;
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final VolumeRepeat volume = new VolumeRepeat();
+
+    @Override public void run() {
+        if (!getSystemService(PowerManager.class).isInteractive()) stopVolume();
+        int direction = volume.step(SystemClock.uptimeMillis());
+        if (direction != 0) getSystemService(AudioManager.class).adjustVolume(direction, AudioManager.FLAG_SHOW_UI);
+        if (volume.active) handler.postDelayed(this, volume.delay);
+    }
+
+    private void stopVolume() {
+        volume.stop();
+        handler.removeCallbacks(this);
+    }
 
     /** stock_home_redirect on the Home key: when the stock home is already on screen (it came up at boot, before
      *  Android bound this service), Home brings it up again with no window change, so the redirect above never
@@ -241,5 +274,6 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     public void onInterrupt() {
+        stopVolume();
     }
 }

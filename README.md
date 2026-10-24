@@ -3,6 +3,7 @@
 </p>
 
 This personal fork also offers [minimal, optional weather on Home](docs/fork-weather.md), with a documented rollback.
+It also includes [optional TCL volume handling](docs/fork-volume.md) for remotes affected by accessibility filtering.
 
 <p align="center">
   <a href="https://github.com/Gathin23/cleanyourtv/stargazers"><img src="https://img.shields.io/github/stars/Gathin23/cleanyourtv?style=flat&cacheSeconds=1800&color=cfffcf&labelColor=15181e" alt="Stars"></a>
